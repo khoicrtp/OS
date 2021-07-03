@@ -13,11 +13,11 @@ int main()
   char filename[24];
   char str[] = "NachOS \n";
 
-  PrintString("NachOS");
+  //PrintString("NachOS");
 
-  //result = Add(100, 200);
+  result = Add(100, 200);
   
-  //PrintInt(result);
+  PrintInt(result);
   
   Halt();
   /* not reached */
