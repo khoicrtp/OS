@@ -48,6 +48,14 @@
 //	"which" is the kind of exception.  The list of possible exceptions
 //	is in machine.h.
 //----------------------------------------------------------------------
+void ping(){
+    int i;
+    for (i = 0; i < 1000; i++)
+    {
+        PrintChar('A');
+    }
+}
+
 void ExceptionHandler(ExceptionType which)
 {
 	int type = kernel->machine->ReadRegister(2);
@@ -359,9 +367,12 @@ void ExceptionHandler(ExceptionType which)
 			break;
 
 		case SC_Exec:
+		{
 			DEBUG(dbgSys, "EXEC:" << kernel->machine->ReadRegister(4) << "\n");
 			//int virtAddr;
 			//virtAddr = kernel->machine->ReadRegister(4);
+			VoidFunctionPtr func = (VoidFunctionPtr) kernel->machine->ReadRegister(4);
+			DEBUG(dbgSys, "FUNC:" << func << "\n");
 			char buf[255];
 			bzero(buf, 255);
 			sprintf(buf, "p%d", pid);
@@ -369,7 +380,14 @@ void ExceptionHandler(ExceptionType which)
 			newThread = new Thread(buf);
 			newThread->pid = pid++;
 
-			kernel->currentThread->SelfTest();
+			newThread->space = kernel->currentThread->space;
+			newThread->SaveUserState();
+			kernel->currentThread = newThread;
+
+			//kernel->currentThread->SelfTest();
+			kernel->currentThread->ForkThread((VoidFunctionPtr) ping);
+			kernel->currentThread->Yield();
+
 
 			/* set previous programm counter (debugging only)*/
 			kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
@@ -378,6 +396,7 @@ void ExceptionHandler(ExceptionType which)
 			/* set next programm counter for brach execution */
 			kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg) + 4);
 			break;
+		}
 		default:
 			cerr << "Unexpected system call " << type << "\n";
 			break;

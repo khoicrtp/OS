@@ -33,9 +33,21 @@ class AddrSpace {
 
     void SaveState();			// Save/restore address space-specific
     void RestoreState();		// info on a context switch 
-        
-    static bool PhyPageStatus[NumPhysPages];
-    static int NumFreePages;
+
+    bool* getPhyPageStatus(){
+      return PhyPageStatus;
+    }
+                  
+    bool PhyPageStatus[NumPhysPages];
+    int NumFreePages=128;
+
+    int getNumFreePages(){
+      return NumFreePages;
+    }
+
+    void decreaseNumFreePages(){
+      NumFreePages--;
+    }
 
     // Translate virtual address _vaddr_
     // to physical address _paddr_. _mode_

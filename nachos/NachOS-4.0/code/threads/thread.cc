@@ -405,6 +405,12 @@ Thread::RestoreUserState()
 //	purposes.
 //----------------------------------------------------------------------
 
+//----------------------------------------------------------------------
+// Thread::SelfTest
+// 	Set up a ping-pong between two threads, by forking a thread 
+//	to call SimpleThread, and then calling SimpleThread ourselves.
+//----------------------------------------------------------------------
+
 static void
 SimpleThread(int which)
 {
@@ -416,12 +422,6 @@ SimpleThread(int which)
     }
 }
 
-//----------------------------------------------------------------------
-// Thread::SelfTest
-// 	Set up a ping-pong between two threads, by forking a thread 
-//	to call SimpleThread, and then calling SimpleThread ourselves.
-//----------------------------------------------------------------------
-
 void
 Thread::SelfTest()
 {
@@ -430,6 +430,16 @@ Thread::SelfTest()
     Thread *t = new Thread("forked thread");
 
     t->Fork((VoidFunctionPtr) SimpleThread, (void *) 1);
+    kernel->currentThread->Yield();
+    SimpleThread(0);
+}
+
+void Thread::ForkThread(VoidFunctionPtr func){
+    DEBUG(dbgThread, "Forking Thread\n");
+
+    Thread *t = new Thread("forked thread");
+
+    t->Fork(func, (void *) 1);
     kernel->currentThread->Yield();
     SimpleThread(0);
 }

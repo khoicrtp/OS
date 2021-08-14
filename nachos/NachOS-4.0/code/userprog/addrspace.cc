@@ -130,24 +130,26 @@ bool AddrSpace::Load(char *fileName)
 #endif
     numPages = divRoundUp(size, PageSize);
     size = numPages * PageSize;
-
-    ASSERT(numPages <= AddrSpace::NumFreePages); // check we're not trying
-                                                 // to run anything too big --
-                                                 // at least until we have
-                                                 // virtual memory
+    DEBUG(dbgAddr, "NUM PAGES: "<<numPages);
+    DEBUG(dbgAddr, "FREE PAGES: "<<getNumFreePages());
+    ASSERT(numPages <= getNumFreePages()); // check we're not trying
+                                           // to run anything too big --
+                                           // at least until we have
+                                           // virtual memory
 
     DEBUG(dbgAddr, "Initializing address space: " << numPages << ", " << size);
 
     //ALLOCATE
     pageTable = new TranslationEntry[numPages];
+    bool *PhyPageStatus = getPhyPageStatus();
     for (int i = 0, index = 0; i < numPages; i++)
     {
         pageTable[i].virtualPage = i;
-        while (index < NumPhysPages && AddrSpace::PhyPageStatus[index]==TRUE){
+        while (index < NumPhysPages && PhyPageStatus[index]==TRUE){
             index++;
         }
-        AddrSpace::PhyPageStatus[index] = TRUE;
-        AddrSpace::NumFreePages--;
+        PhyPageStatus[index] = TRUE;
+        decreaseNumFreePages();
         bzero(&kernel->machine->mainMemory[index * PageSize], PageSize);
 
         pageTable[i].physicalPage = index;
