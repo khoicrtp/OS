@@ -48,13 +48,6 @@
 //	"which" is the kind of exception.  The list of possible exceptions
 //	is in machine.h.
 //----------------------------------------------------------------------
-void ping(){
-    int i;
-    for (i = 0; i < 1000; i++)
-    {
-        PrintChar('A');
-    }
-}
 
 void ExceptionHandler(ExceptionType which)
 {
@@ -371,8 +364,19 @@ void ExceptionHandler(ExceptionType which)
 			DEBUG(dbgSys, "EXEC:" << kernel->machine->ReadRegister(4) << "\n");
 			//int virtAddr;
 			//virtAddr = kernel->machine->ReadRegister(4);
-			VoidFunctionPtr func = (VoidFunctionPtr) kernel->machine->ReadRegister(4);
-			DEBUG(dbgSys, "FUNC:" << func << "\n");
+			//VoidFunctionPtr func = (VoidFunctionPtr) kernel->machine->ReadRegister(4);
+			vaddr = kernel->machine->ReadRegister(4);
+			char *filename = new char[255];
+			kernel->machine->ReadMem(vaddr, 1, &memval); //read memory to get value address
+			int i = 0;
+			while ((*(char *)&memval) != '\0') //While not end of string (\0)
+			{
+				filename[i]=(*(char *)&memval); //Write each char
+				vaddr++;
+				i++;
+				kernel->machine->ReadMem(vaddr, 1, &memval); //Read each char from memory to write
+			}
+			DEBUG(dbgSys, "FILENAME:" << filename << "\n");
 			char buf[255];
 			bzero(buf, 255);
 			sprintf(buf, "p%d", pid);
@@ -385,8 +389,10 @@ void ExceptionHandler(ExceptionType which)
 			kernel->currentThread = newThread;
 
 			//kernel->currentThread->SelfTest();
-			kernel->currentThread->ForkThread((VoidFunctionPtr) ping);
+			DEBUG(dbgSys, "FORKING THREAD:" << "\n");
+			kernel->currentThread->ForkThreadWithFilename(filename);
 			kernel->currentThread->Yield();
+			DEBUG(dbgSys, "THREAD FORKED:" << "\n");
 
 
 			/* set previous programm counter (debugging only)*/

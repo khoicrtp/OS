@@ -13,6 +13,24 @@
   "C_Cpp_Runner.enableWarnings": true,
   "C_Cpp_Runner.warningsAsError": false,
   "files.associations": {
-    "vector": "cpp"
+    "vector": "cpp",
+    "array": "cpp",
+    "initializer_list": "cpp",
+    "string_view": "cpp",
+    "utility": "cpp",
+    "*.tcc": "cpp",
+    "deque": "cpp",
+    "string": "cpp",
+    "memory": "cpp",
+    "random": "cpp",
+    "fstream": "cpp",
+    "unordered_map": "cpp",
+    "sstream": "cpp",
+    "stdexcept": "cpp",
+    "tuple": "cpp",
+    "type_traits": "cpp",
+    "atomic": "cpp",
+    "algorithm": "cpp",
+    "memory_resource": "cpp"
   }
 }

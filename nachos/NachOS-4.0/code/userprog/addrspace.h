@@ -27,9 +27,10 @@ class AddrSpace {
                                         // a file
 					// return false if not found
 
-    void Execute();             	// Run a program
+    //void Execute();             	// Run a program
 					// assumes the program has already
                                         // been loaded
+    void Execute(char *fileName);
 
     void SaveState();			// Save/restore address space-specific
     void RestoreState();		// info on a context switch 

@@ -104,7 +104,8 @@ class Thread {
     char* getName() { return (name); }
     void Print() { cout << name; }
     void SelfTest();		// test whether thread impl is working
-    void ForkThread(VoidFunctionPtr func);
+    void ForkThreadWithFilename(char* filename);
+    //void LoadAndExecuteFile(char *filename);
     int pid;
 
   private:
