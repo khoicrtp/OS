@@ -133,7 +133,7 @@ Print(char *name)
     char *buffer;
 
     if ((openFile = kernel->fileSystem->Open(name)) == NULL) {
-        printf("Print: unable to open file %s\n", name);
+        printf("Print: unable to open file (MAIN FUNC) %s\n", name);
         return;
     }
     

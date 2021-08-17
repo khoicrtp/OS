@@ -31,6 +31,11 @@
     "type_traits": "cpp",
     "atomic": "cpp",
     "algorithm": "cpp",
-    "memory_resource": "cpp"
+    "memory_resource": "cpp",
+    "exception": "cpp",
+    "functional": "cpp",
+    "iosfwd": "cpp",
+    "istream": "cpp",
+    "system_error": "cpp"
   }
 }

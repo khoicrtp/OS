@@ -359,50 +359,100 @@ void ExceptionHandler(ExceptionType which)
 			ASSERTNOTREACHED();
 			break;
 
+		// case SC_Exec:
+		// {
+		// 	DEBUG(dbgSys, "EXEC:" << kernel->machine->ReadRegister(4) << "\n");
+		// 	//int virtAddr;
+		// 	//virtAddr = kernel->machine->ReadRegister(4);
+		// 	//VoidFunctionPtr func = (VoidFunctionPtr) kernel->machine->ReadRegister(4);
+		// 	int val = kernel->machine->ReadRegister(4);
+
+		// 	char *filename = &(kernel->machine->mainMemory[val]);
+
+		// 	DEBUG(dbgSys, "FILENAME:" << filename << "\n");
+		// 	char buf[255];
+		// 	bzero(buf, 255);
+		// 	sprintf(buf, "p%d", pid);
+		// 	Thread *newThread;
+		// 	newThread = new Thread(buf);
+		// 	newThread->pid = pid++;
+
+		// 	newThread->space = kernel->currentThread->space;
+		// 	newThread->SaveUserState();
+		// 	kernel->currentThread = newThread;
+
+		// 	//kernel->currentThread->SelfTest();
+		// 	DEBUG(dbgSys, "FORKING THREAD:" << "\n");
+		// 	kernel->currentThread->ForkThreadWithFilename(filename);
+		// 	kernel->currentThread->Yield();
+		// 	DEBUG(dbgSys, "THREAD FORKED:" << "\n");
+
+		// 	/* set previous programm counter (debugging only)*/
+		// 	kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
+		// 	/* set programm counter to next instruction (all Instructions are 4 byte wide)*/
+		// 	kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
+		// 	/* set next programm counter for brach execution */
+		// 	kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg) + 4);
+		// 	break;
+		// }
 		case SC_Exec:
-		{
-			DEBUG(dbgSys, "EXEC:" << kernel->machine->ReadRegister(4) << "\n");
-			//int virtAddr;
-			//virtAddr = kernel->machine->ReadRegister(4);
-			//VoidFunctionPtr func = (VoidFunctionPtr) kernel->machine->ReadRegister(4);
-			vaddr = kernel->machine->ReadRegister(4);
-			char *filename = new char[255];
-			kernel->machine->ReadMem(vaddr, 1, &memval); //read memory to get value address
-			int i = 0;
-			while ((*(char *)&memval) != '\0') //While not end of string (\0)
+			char *filename;
+			filename = new char[100];
+
+			int buffadd;
+			buffadd = kernel->machine->ReadRegister(4); // only one argument, so that’s in R4 */
+			int ch;
+			//find a proper place to free this allocation
+			if (!kernel->machine->ReadMem(buffadd, 1, &ch))
+				return;
+			i = 0;
+			while (ch != 0)
 			{
-				filename[i]=(*(char *)&memval); //Write each char
-				vaddr++;
+				filename[i] = (char)ch;
+				buffadd += 1;
 				i++;
-				kernel->machine->ReadMem(vaddr, 1, &memval); //Read each char from memory to write
+				if (!kernel->machine->ReadMem(buffadd, 1, &ch))
+					return;
 			}
-			DEBUG(dbgSys, "FILENAME:" << filename << "\n");
-			char buf[255];
-			bzero(buf, 255);
-			sprintf(buf, "p%d", pid);
-			Thread *newThread;
-			newThread = new Thread(buf);
-			newThread->pid = pid++;
+			i++;
+			filename[i] = '\0';
 
-			newThread->space = kernel->currentThread->space;
-			newThread->SaveUserState();
-			kernel->currentThread = newThread;
+			DEBUG(dbgSys, "FILENAME:" << filename);
+			if (filename != NULL)
+			{
+				AddrSpace *space = new AddrSpace;
+				ASSERT(space != (AddrSpace *)NULL);
+				if (space->Load(filename))
+				{						// load the program into the space
+					space->Execute();	// run the program
+					ASSERTNOTREACHED(); // Execute never returns
+				}
+			}
 
-			//kernel->currentThread->SelfTest();
-			DEBUG(dbgSys, "FORKING THREAD:" << "\n");
-			kernel->currentThread->ForkThreadWithFilename(filename);
-			kernel->currentThread->Yield();
-			DEBUG(dbgSys, "THREAD FORKED:" << "\n");
+			// AddrSpace *space;
+			// space = new AddrSpace();
+			// space->Load(filename);
+			// DEBUG(dbgSys, "FILENAME: "<< filename);
+			// DEBUG(dbgSys, "FILE SECTOR: "<< space);
+			// Thread *t;
+			// t = new Thread(filename);
+			// t->space = space;
+			// int processId;
+			// //processId = t->getId();
+			// filename[i] = (char)0;
+			// // now filename contains the file /
+			// //t->Fork(processCreator, 0);
+			// kernel->machine->WriteRegister(2, processId);
 
-
-			/* set previous programm counter (debugging only)*/
+			// set previous programm counter (debugging only)/
 			kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
-			/* set programm counter to next instruction (all Instructions are 4 byte wide)*/
+			// set programm counter to next instruction (all Instructions are 4 byte wide)/
 			kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
-			/* set next programm counter for brach execution */
+			// set next programm counter for brach execution */
 			kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg) + 4);
+			return;
+			ASSERTNOTREACHED();
 			break;
-		}
 		default:
 			cerr << "Unexpected system call " << type << "\n";
 			break;
@@ -412,5 +462,6 @@ void ExceptionHandler(ExceptionType which)
 		cerr << "Unexpected user mode exception" << (int)which << "\n";
 		break;
 	}
+	return;
 	ASSERTNOTREACHED();
 }

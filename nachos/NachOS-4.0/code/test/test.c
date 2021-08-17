@@ -1,5 +1,6 @@
 #include "syscall.h"
 
 void main(){
-    PrintString("TEST PROGRAM");
+    PrintString("-----------TEST PROGRAM IS RUNNING-----------");
+    Halt();
 }
