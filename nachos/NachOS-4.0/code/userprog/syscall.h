@@ -13,6 +13,7 @@
 #ifndef SYSCALLS_H
 #define SYSCALLS_H
 
+//#include "../debug.h"
 #include "copyright.h"
 #include "errno.h"
 /* system call codes -- used by the stubs to tell the kernel which system call

@@ -86,7 +86,8 @@ SwapHeader(NoffHeader *noffH)
 
 AddrSpace::~AddrSpace()
 {
-    for (int i = 0; i < numPages;i++){
+    for (int i = 0; i < numPages; i++)
+    {
         AddrSpace::NumFreePages++;
         AddrSpace::PhyPageStatus[pageTable[i].physicalPage] = FALSE;
     }
@@ -105,11 +106,13 @@ AddrSpace::~AddrSpace()
 
 bool AddrSpace::Load(char *fileName)
 {
+    DEBUG(dbgSys,"---LOADING A PROG---");
     OpenFile *executable = kernel->fileSystem->Open(fileName);
     NoffHeader noffH;
-    unsigned int size;
+    int size;
 
     DEBUG(dbgSys, "EXECUTABLE:" << executable);
+    DEBUG(dbgSys, "SIZE 1:" << size);
     if (executable == NULL)
     {
         cerr << "Unable to open file for loading" << fileName << "\n";
@@ -126,6 +129,10 @@ bool AddrSpace::Load(char *fileName)
     // how big is address space?
     size = noffH.code.size + noffH.readonlyData.size + noffH.initData.size +
            noffH.uninitData.size + UserStackSize;
+    DEBUG(dbgSys, "SIZE RO:" << noffH.readonlyData.size);
+    DEBUG(dbgSys, "SIZE 2:" << size);
+    DEBUG(dbgSys, "SIZE 2:" << noffH.code.size + noffH.initData.size +
+                                   noffH.uninitData.size + UserStackSize);
     // we need to increase the size
     // to leave room for the stack
 #else
@@ -141,7 +148,7 @@ bool AddrSpace::Load(char *fileName)
 
     //ASSERT(numPages <= NumPhysPages);		// check we're not trying
     DEBUG(dbgSys, "NUM PAGES, SIZE: " << numPages << ", " << size);
-    DEBUG(dbgSys, "NUM FREE PAGES: " << AddrSpace::NumFreePages);
+    //DEBUG(dbgSys, "NUM FREE PAGES: " << AddrSpace::NumFreePages);
 
     ASSERT(numPages <= AddrSpace::getNumFreePages());
     // to run anything too big --
@@ -177,7 +184,7 @@ bool AddrSpace::Load(char *fileName)
         DEBUG(dbgSys, noffH.code.virtualAddr << ", " << noffH.code.size);
         executable->ReadAt(
             &(kernel->machine->mainMemory[pageTable[noffH.code.virtualAddr / PageSize].physicalPage * PageSize + (noffH.code.virtualAddr % PageSize)]), noffH.code.size, noffH.code.inFileAddr);
-    }
+        }
     DEBUG(dbgSys, "INIT DATA SIZE:" << noffH.initData.size);
     if (noffH.initData.size > 0)
     {
@@ -213,7 +220,7 @@ bool AddrSpace::Load(char *fileName)
 
 void AddrSpace::Execute()
 {
-    DEBUG(dbgSys, "EXECUTING");
+    DEBUG(dbgSys, "EXECUTING ");
     kernel->currentThread->space = this;
 
     this->InitRegisters(); // set the initial register values

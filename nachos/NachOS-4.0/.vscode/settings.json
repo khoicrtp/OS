@@ -36,6 +36,8 @@
     "functional": "cpp",
     "iosfwd": "cpp",
     "istream": "cpp",
-    "system_error": "cpp"
+    "system_error": "cpp",
+    "new": "cpp",
+    "syscall.h": "c"
   }
 }

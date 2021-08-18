@@ -45,7 +45,7 @@ Thread::Thread(char *threadName)
                                 // new thread ignores contents
                                 // of machine registers
     }
-    space = NULL;
+    space = new AddrSpace;
 }
 
 //----------------------------------------------------------------------
@@ -437,19 +437,30 @@ static void LoadAndExecuteFile(char *filename)
         AddrSpace *space = new AddrSpace;
         ASSERT(space != (AddrSpace *)NULL);
         if (space->Load(filename))
-        {                       // load the program into the space
+        {
+            DEBUG(dbgSys, "-----EXECUTING IN THREAD"); // load the program into the space
             space->Execute();   // run the program
+            DEBUG(dbgSys, "-----FINISH EXECUTING IN THREAD"); 
             ASSERTNOTREACHED(); // Execute never returns
         }
+        //kernel->currentThread->space = new AddrSpace;
+        // ASSERT(kernel->currentThread->space != (AddrSpace *)NULL);
+        // if (kernel->currentThread->space->Load(filename))
+        // {                                            // load the program into the space
+        //     kernel->currentThread->space->Execute(); // run the program
+        //     ASSERTNOTREACHED();                      // Execute never returns
+        // }
     }
 }
 
 void Thread::ForkThreadWithFilename(char *filename)
 {
-    DEBUG(dbgThread, "Forking Thread\n");
+    DEBUG(dbgSys, "Forking Thread\n");
 
-    Thread *t = new Thread("forked thread");
-    t->Fork((VoidFunctionPtr)LoadAndExecuteFile, (void*) filename);
+    //DEBUG(dbgSys, "SCHEDULER:");
+    //kernel->scheduler->Print();
+
+    Thread *t = this; //new Thread("forked thread");
+    t->Fork((VoidFunctionPtr)LoadAndExecuteFile, filename);
     kernel->currentThread->Yield();
-    //SimpleThread(0);
 }

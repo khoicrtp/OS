@@ -174,6 +174,7 @@ Scheduler::CheckToBeDestroyed()
 void
 Scheduler::Print()
 {
+    //DEBUG(dbgSys, "Ready list contents:\n");
     cout << "Ready list contents:\n";
     readyList->Apply(ThreadPrint);
 }

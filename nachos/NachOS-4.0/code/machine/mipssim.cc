@@ -56,9 +56,10 @@ class Instruction {
 void
 Machine::Run()
 {
-    Instruction *instr = new Instruction;  // storage for decoded instruction
+	DEBUG(dbgSys, "---RUNNING IN MIPSSIM");
+	Instruction *instr = new Instruction; // storage for decoded instruction
 
-    if (debug->IsEnabled('m')) {
+	if (debug->IsEnabled('m')) {
         cout << "Starting program in thread: " << kernel->currentThread->getName();
 	cout << ", at time: " << kernel->stats->totalTicks << "\n";
     }
@@ -69,6 +70,7 @@ Machine::Run()
 	if (singleStep && (runUntilTime <= kernel->stats->totalTicks))
 	  Debugger();
     }
+	DEBUG(dbgSys, "---FINISH RUNNING IN MIPSSIM");
 }
 
 

@@ -1,4 +1,4 @@
-//Print A
+//Print B
 #include "syscall.h"
 
 void main(){

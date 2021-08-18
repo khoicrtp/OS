@@ -26,6 +26,7 @@
 #include "synchconsole.h"
 #include "syscall.h"
 #include "ksyscall.h"
+#include "thread.h"
 //----------------------------------------------------------------------
 // ExceptionHandler
 // 	Entry point into the Nachos kernel.  Called when a user program
@@ -48,6 +49,52 @@
 //	"which" is the kind of exception.  The list of possible exceptions
 //	is in machine.h.
 //----------------------------------------------------------------------
+void increasePC()
+{
+	kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
+
+	kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
+
+	kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg) + 4);
+	// Adjust Program Counter
+}
+char *User2System(int virtAddr, int limit)
+{
+	int i;
+	int oneChar;
+	char *kernelBuf = NULL;
+
+	kernelBuf = new char[limit + 1];
+	if (kernelBuf == NULL)
+		return kernelBuf;
+	memset(kernelBuf, 0, limit + 1);
+
+	for (i = 0; i < limit; i++)
+	{
+		kernel->machine->ReadMem(virtAddr + i, 1, &oneChar);
+		kernelBuf[i] = (char)oneChar;
+		if (oneChar == 0)
+			break;
+	}
+	return kernelBuf;
+}
+
+int System2User(int virtAddr, int len, char *buffer)
+{
+	if (len < 0)
+		return -1;
+	if (len == 0)
+		return len;
+	int i = 0;
+	int oneChar = 0;
+	do
+	{
+		oneChar = (int)buffer[i];
+		kernel->machine->WriteMem(virtAddr + i, 1, oneChar);
+		i++;
+	} while (i < len && oneChar != 0);
+	return i;
+}
 
 void ExceptionHandler(ExceptionType which)
 {
@@ -117,6 +164,28 @@ void ExceptionHandler(ExceptionType which)
 	case SyscallException:
 		switch (type)
 		{
+		case SC_Exit:
+		{
+			// kernel->currentThread->Finish();
+			// kernel->currentThread->Yield();
+			
+			DEBUG(dbgSys, "EXIT, initiated by user program.\n");
+
+			SysHalt();
+			// {
+			// 	/* set previous programm counter (debugging only)*/
+			// 	kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
+
+			// 	/* set programm counter to next instruction (all Instructions are 4 byte wide)*/
+			// 	kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
+
+			// 	/* set next programm counter for brach execution */
+			// 	kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg) + 4);
+			// }
+			//ASSERTNOTREACHED();
+			return;
+			break;
+		}
 		case SC_Halt:
 			DEBUG(dbgSys, "Shutdown, initiated by user program.\n");
 
@@ -340,10 +409,13 @@ void ExceptionHandler(ExceptionType which)
 			break;
 
 		case SC_PrintString: //Print char*
+		{
 			vaddr = kernel->machine->ReadRegister(4);
 			kernel->machine->ReadMem(vaddr, 1, &memval); //read memory to get value address
-			while ((*(char *)&memval) != '\0')			 //While not end of string (\0)
+			i = 0;
+			while ((*(char *)&memval) != '\0') //While not end of string (\0)
 			{
+				DEBUG(dbgSys, "----------Printing string[i]:" << i);
 				kernel->synchConsoleOut->PutChar(*(char *)&memval); //Write each char
 				vaddr++;
 				kernel->machine->ReadMem(vaddr, 1, &memval); //Read each char from memory to write
@@ -358,6 +430,28 @@ void ExceptionHandler(ExceptionType which)
 			return;
 			ASSERTNOTREACHED();
 			break;
+			// DEBUG(dbgSys, "------Printing string\n");
+			// int virtAddr;
+			// char *buffer;
+			// virtAddr = kernel->machine->ReadRegister(4); // Read string from register 4
+			// buffer = User2System(virtAddr, 512);		 // Copy string from User space to System space
+
+			// int i = 0;
+			// while (buffer[i] != '\0')
+			// {
+			// 	DEBUG(dbgSys, "----------Printing string[i]:"<<i);
+			// 	kernel->synchConsoleOut->PutChar(buffer[i]); // Print string to console
+			// 	i++;
+			// }
+			// kernel->synchConsoleOut->PutChar('\n'); // Line break
+			// DEBUG(dbgSys, "----------Finish Printing string");
+			// delete buffer;
+			// increasePC(); // Adjust program counter
+
+			// return;
+			// ASSERTNOTREACHED();
+			// break;
+		}
 
 		// case SC_Exec:
 		// {
@@ -420,13 +514,8 @@ void ExceptionHandler(ExceptionType which)
 			DEBUG(dbgSys, "FILENAME:" << filename);
 			if (filename != NULL)
 			{
-				AddrSpace *space = new AddrSpace;
-				ASSERT(space != (AddrSpace *)NULL);
-				if (space->Load(filename))
-				{						// load the program into the space
-					space->Execute();	// run the program
-					ASSERTNOTREACHED(); // Execute never returns
-				}
+				Thread *t = new Thread("child thread");
+				t->ForkThreadWithFilename(filename);
 			}
 
 			// AddrSpace *space;
