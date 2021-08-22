@@ -13,7 +13,6 @@
 #ifndef SYSCALLS_H
 #define SYSCALLS_H
 
-//#include "../debug.h"
 #include "copyright.h"
 #include "errno.h"
 /* system call codes -- used by the stubs to tell the kernel which system call
@@ -44,6 +43,7 @@
 #define SC_ReadNum 21
 #define SC_RandomNum 22
 #define SC_Add		42
+#define SC_Sleep 77
 
 #ifndef IN_ASM
 

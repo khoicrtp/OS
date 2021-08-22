@@ -1,11 +1,11 @@
-//Print A
 #include "syscall.h"
-
-void main(){
+int main()
+{
     int i;
-    for (i = 0; i < 10; i++)
+    for (i = 0; i < 100; i++)
     {
-        PrintChar('*');
+        //PrintChar('A');
+        PrintString("A");
     }
-    //Exit(0);
+    // Halt();
 }

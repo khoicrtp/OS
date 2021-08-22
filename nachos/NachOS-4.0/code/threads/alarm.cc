@@ -25,6 +25,7 @@ Alarm::Alarm(bool doRandom)
     timer = new Timer(doRandom, this);
 }
 
+
 //----------------------------------------------------------------------
 // Alarm::CallBack
 //	Software interrupt handler for the timer device. The timer device is

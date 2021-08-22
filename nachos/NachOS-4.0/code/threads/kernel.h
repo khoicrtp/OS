@@ -56,7 +56,7 @@ class Kernel {
     FileSystem *fileSystem;     
     PostOfficeInput *postOfficeIn;
     PostOfficeOutput *postOfficeOut;
-
+    
     int hostName;               // machine identifier
 
   private:

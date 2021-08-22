@@ -45,16 +45,12 @@
 #include "filesys.h"
 #include "openfile.h"
 #include "sysdep.h"
-#include "thread.h"
-
+#include "synch.h"
+#include "bitmap.h"
+#include "ptable.h"
 // global variables
 Kernel *kernel;
 Debug *debug;
-Thread *threadArray[MAX_THREAD]; // Array of thread pointers
-unsigned thread_index;           // Index into this array (also used to assign unique pid)
-Thread *threadToBeDestroyed;
-bool initializedConsoleSemaphores;
-bool exitThreadArray[MAX_THREAD]; //Marks exited threads
 
 //----------------------------------------------------------------------
 // Cleanup
@@ -139,7 +135,7 @@ void Print(char *name)
 
     if ((openFile = kernel->fileSystem->Open(name)) == NULL)
     {
-        printf("Print: unable to open file (MAIN FUNC) %s\n", name);
+        printf("Print: unable to open file %s\n", name);
         return;
     }
 
@@ -258,9 +254,16 @@ int main(int argc, char **argv)
 #endif //FILESYS_STUB
         }
     }
+    extern Semaphore *addrLock;
+    extern Bitmap *gPhysPageBitMap;
+    extern PTable *pTab;
+    addrLock = new Semaphore("addrLock", 1);
+    gPhysPageBitMap = new Bitmap(256);
+    pTab = new PTable(10);
+
     debug = new Debug(debugArg);
 
-    DEBUG(dbgSys, "Entering main");
+    DEBUG(dbgThread, "Entering main");
 
     kernel = new Kernel(argc, argv);
 
@@ -307,27 +310,15 @@ int main(int argc, char **argv)
 #endif // FILESYS_STUB
 
     // finally, run an initial user program if requested to do so
-    // if (userProgName != NULL)
-    // {
-    //     AddrSpace *space = new AddrSpace;
-    //     ASSERT(space != (AddrSpace *)NULL);
-    //     if (space->Load(userProgName))
-    //     {                       // load the program into the space
-    //         space->Execute();   // run the program
-    //         ASSERTNOTREACHED(); // Execute never returns
-    //     }
-    // }
     if (userProgName != NULL)
     {
-        // Thread *t = new Thread("main");
-        // t->ForkThreadWithFilename(userProgName);
-
-        AddrSpace *space = new AddrSpace;
+        //AddrSpace *space;
+        AddrSpace *space = new AddrSpace();
         ASSERT(space != (AddrSpace *)NULL);
         if (space->Load(userProgName))
-        {                       // load the program into the space
-            space->Execute();   // run the program
-            ASSERTNOTREACHED(); // Execute never returns
+        {                                 // load the program into the space
+            space->Execute(userProgName); // run the program
+            ASSERTNOTREACHED();           // Execute never returns
         }
     }
 

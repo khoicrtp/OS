@@ -26,7 +26,7 @@
 #include "synchconsole.h"
 #include "syscall.h"
 #include "ksyscall.h"
-#include "thread.h"
+#include "ptable.h"
 //----------------------------------------------------------------------
 // ExceptionHandler
 // 	Entry point into the Nachos kernel.  Called when a user program
@@ -49,78 +49,10 @@
 //	"which" is the kind of exception.  The list of possible exceptions
 //	is in machine.h.
 //----------------------------------------------------------------------
-void increasePC()
+
+void StartProcess(int arg)
 {
-	DEBUG(dbgSys, "----INCREASE PC");
-	kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
-
-	kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
-
-	kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg) + 4);
-	// Adjust Program Counter
-}
-char *User2System(int virtAddr, int limit)
-{
-	int i;
-	int oneChar;
-	char *kernelBuf = NULL;
-
-	kernelBuf = new char[limit + 1];
-	if (kernelBuf == NULL)
-		return kernelBuf;
-	memset(kernelBuf, 0, limit + 1);
-
-	for (i = 0; i < limit; i++)
-	{
-		kernel->machine->ReadMem(virtAddr + i, 1, &oneChar);
-		kernelBuf[i] = (char)oneChar;
-		if (oneChar == 0)
-			break;
-	}
-	return kernelBuf;
-}
-
-int System2User(int virtAddr, int len, char *buffer)
-{
-	if (len < 0)
-		return -1;
-	if (len == 0)
-		return len;
-	int i = 0;
-	int oneChar = 0;
-	do
-	{
-		oneChar = (int)buffer[i];
-		kernel->machine->WriteMem(virtAddr + i, 1, oneChar);
-		i++;
-	} while (i < len && oneChar != 0);
-	return i;
-}
-
-void StartProcess(char *filename)
-{
-	DEBUG(dbgSys,"STARTING PROCESS");
-	OpenFile *executable = kernel->fileSystem->Open(filename);
-	AddrSpace *space;
-
-	if (executable == NULL)
-	{
-		DEBUG(dbgSys, "Unable to open file \n");
-		printf("Unable to open file %s\n", filename);
-		return;
-	}
-	space = new AddrSpace();
-	kernel->currentThread->space = space;
-
-	delete executable; // close file
-
-	space->InitRegisters(); // set the initial register values
-	space->RestoreState();	// load page table register
-
-	kernel->machine->Run(); // jump to the user progam
-	ASSERT(FALSE);			// machine->Run never returns;
-							// the address space exits
-							// by doing the syscall "exit"
+	kernel->currentThread->space->Execute(arg);
 }
 
 void ExceptionHandler(ExceptionType which)
@@ -131,7 +63,6 @@ void ExceptionHandler(ExceptionType which)
 	int buffer;
 	int length;
 	char *buf;
-	int pid = 0;
 	DEBUG(dbgSys, "Received Exception " << which << " type: " << type << "\n");
 
 	switch (which)
@@ -198,7 +129,99 @@ void ExceptionHandler(ExceptionType which)
 
 			ASSERTNOTREACHED();
 			break;
+		case SC_Exec:
+			char *filename;
+			filename = new char[100];
 
+			int buffadd;
+			buffadd = kernel->machine->ReadRegister(4); /* only one argument, so that’s in R4 */
+			int ch;
+			int i;
+			//find a proper place to free this allocation
+			if (!kernel->machine->ReadMem(buffadd, 1, &ch))
+				return;
+			i = 0;
+			while (ch != 0)
+			{
+				filename[i] = (char)ch;
+				buffadd += 1;
+				i++;
+				if (!kernel->machine->ReadMem(buffadd, 1, &ch))
+					return;
+			}
+
+			filename[i] = (char)0;
+
+			extern PTable *pTab;
+			// Return child process id
+			int id;
+			id = pTab->ExecUpdate(filename);
+			kernel->machine->WriteRegister(2, id);
+			/* set previous programm counter (debugging only)*/
+			kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
+			/* set programm counter to next instruction (all Instructions are 4 byte wide)*/
+			kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
+			/* set next programm counter for brach execution */
+			kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg) + 4);
+			return;
+			ASSERTNOTREACHED();
+			break;
+		case SC_Join:
+		{
+			// int Join(SpaceId id)
+			// Input: id dia chi cua thread
+			// Output:
+			int id;
+			id = kernel->machine->ReadRegister(4);
+
+			int res = pTab->JoinUpdate(id);
+
+			kernel->machine->WriteRegister(2, res);
+			/* set previous programm counter (debugging only)*/
+			kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
+			/* set programm counter to next instruction (all Instructions are 4 byte wide)*/
+			kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
+			/* set next programm counter for brach execution */
+			kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg) + 4);
+			return;
+			ASSERTNOTREACHED();
+			break;
+		}
+		case SC_Exit:
+		{
+			//void Exit(int status);
+			// Input: status code
+			int exitStatus = kernel->machine->ReadRegister(4);
+
+			if (exitStatus != 0)
+			{
+
+				/* set previous programm counter (debugging only)*/
+				kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
+				/* set programm counter to next instruction (all Instructions are 4 byte wide)*/
+				kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
+				/* set next programm counter for brach execution */
+				kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg) + 4);
+				return;
+				// ASSERTNOTREACHED();
+				// break;
+			}
+
+			int res = pTab->ExitUpdate(exitStatus);
+
+			kernel->currentThread->FreeSpace();
+			kernel->currentThread->Finish();
+			kernel->machine->WriteRegister(2, res);
+			/* set previous programm counter (debugging only)*/
+			kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
+			/* set programm counter to next instruction (all Instructions are 4 byte wide)*/
+			kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
+			/* set next programm counter for brach execution */
+			kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg) + 4);
+			return;
+			ASSERTNOTREACHED();
+			break;
+		}
 		case SC_Add:
 			DEBUG(dbgSys, "Adding... " << kernel->machine->ReadRegister(4) << " + " << kernel->machine->ReadRegister(5) << "\n");
 
@@ -373,7 +396,6 @@ void ExceptionHandler(ExceptionType which)
 
 		case SC_ReadString: //Read char* with length
 			// initialize variables
-			int i;
 			buffer = kernel->machine->ReadRegister(4); //Get the value from register r4
 			length = kernel->machine->ReadRegister(5); //Get the value from register r5
 			buf = NULL;
@@ -417,10 +439,8 @@ void ExceptionHandler(ExceptionType which)
 		{
 			vaddr = kernel->machine->ReadRegister(4);
 			kernel->machine->ReadMem(vaddr, 1, &memval); //read memory to get value address
-			i = 0;
-			while ((*(char *)&memval) != '\0') //While not end of string (\0)
+			while ((*(char *)&memval) != '\0')			 //While not end of string (\0)
 			{
-				DEBUG(dbgSys, "----------Printing string[i]:" << i);
 				kernel->synchConsoleOut->PutChar(*(char *)&memval); //Write each char
 				vaddr++;
 				kernel->machine->ReadMem(vaddr, 1, &memval); //Read each char from memory to write
@@ -435,111 +455,21 @@ void ExceptionHandler(ExceptionType which)
 			return;
 			ASSERTNOTREACHED();
 			break;
-			// DEBUG(dbgSys, "------Printing string\n");
-			// int virtAddr;
-			// char *buffer;
-			// virtAddr = kernel->machine->ReadRegister(4); // Read string from register 4
-			// buffer = User2System(virtAddr, 512);		 // Copy string from User space to System space
-
-			// int i = 0;
-			// while (buffer[i] != '\0')
-			// {
-			// 	DEBUG(dbgSys, "----------Printing string[i]:"<<i);
-			// 	kernel->synchConsoleOut->PutChar(buffer[i]); // Print string to console
-			// 	i++;
-			// }
-			// kernel->synchConsoleOut->PutChar('\n'); // Line break
-			// DEBUG(dbgSys, "----------Finish Printing string");
-			// delete buffer;
-			// increasePC(); // Adjust program counter
-
-			// return;
-			// ASSERTNOTREACHED();
+		}
+		case SC_Sleep:
+		{
+			// int val = kernel->machine->ReadRegister(4);
+			// cout << "Sleep Time:" << val << "(ms)" << endl;
+			// kernel->alarm->WaitUntil(val);
 			// break;
 		}
 
-		case SC_Exec:
-		// {
-		// 	// Copy the executable name into kernel space
-		// 	vaddr = kernel->machine->ReadRegister(4);
-		// 	kernel->machine->ReadMem(vaddr, 1, &memval);
-		// 	char *buffer;
-		// 	int i = 0;
-		// 	while ((*(char *)&memval) != '\0')
-		// 	{
-		// 		buffer[i] = (*(char *)&memval);
-		// 		i++;
-		// 		vaddr++;
-		// 		kernel->machine->ReadMem(vaddr, 1, &memval);
-		// 	}
-		// 	buffer[i] = (*(char *)&memval);
-		// 	DEBUG(dbgSys,"FILENAME: " << buffer);
-		// 	StartProcess(buffer);
-		// }
-			{
-				DEBUG(dbgSys, "EXEC:" << kernel->machine->ReadRegister(4) << "\n");
-				//int virtAddr;
-				//virtAddr = kernel->machine->ReadRegister(4);
-				//VoidFunctionPtr func = (VoidFunctionPtr) kernel->machine->ReadRegister(4);
-				int val = kernel->machine->ReadRegister(4);
-
-				char *filename = &(kernel->machine->mainMemory[val]);
-
-				DEBUG(dbgSys, "FILENAME:" << filename << "\n");
-				char buf[255];
-				bzero(buf, 255);
-				sprintf(buf, "p%d", pid);
-				Thread *newThread;
-				newThread = new Thread(buf);
-				newThread->pid = pid++;
-
-				newThread->space = kernel->currentThread->space;
-				newThread->SaveUserState();
-				kernel->currentThread = newThread;
-
-				//kernel->currentThread->SelfTest();
-				DEBUG(dbgSys, "FORKING THREAD:" << "\n");
-				kernel->currentThread->ForkThreadWithFilename(filename);
-				kernel->currentThread->Yield();
-				DEBUG(dbgSys, "THREAD FORKED:" << "\n");
-
-				/* set previous programm counter (debugging only)*/
-				kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
-				/* set programm counter to next instruction (all Instructions are 4 byte wide)*/
-				kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
-				/* set next programm counter for brach execution */
-				kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg) + 4);
-				break;
-			}
-		case SC_Exit:
-		{
-			{
-				int exitcode;
-				exitcode = kernel->machine->ReadRegister(4);
-				printf("[pid %d]: Exit called. Code: %d\n", kernel->currentThread->GetPID(), exitcode);
-				// We do not wait for the children to finish.
-				// The children will continue to run.
-				// We will worry about this when and if we implement signals.
-				exitThreadArray[kernel->currentThread->GetPID()] = true;
-
-				// Find out if all threads have called exit
-				for (i = 0; i < thread_index; i++)
-				{
-					if (!exitThreadArray[i])
-						break;
-				}
-				kernel->currentThread->Exit(i == thread_index, exitcode);
-			}
-		}
 		default:
-			cerr << "Unexpected system call " << type << "\n";
+		{
+			cerr << "Unexpected user mode exception" << (int)which << "\n";
 			break;
 		}
-		break;
-	default:
-		cerr << "Unexpected user mode exception" << (int)which << "\n";
-		break;
+			ASSERTNOTREACHED();
+		}
 	}
-	return;
-	ASSERTNOTREACHED();
 }

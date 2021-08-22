@@ -15,6 +15,10 @@
 int
 main()
 {
-    Halt();
-    /* not reached */
+    int pingID, pongID;
+    pingID = Exec("../test/ping");
+    pongID = Exec("../test/pong");
+    Join(pingID);
+    Join(pongID);
+    
 }

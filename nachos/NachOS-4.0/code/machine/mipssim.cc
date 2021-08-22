@@ -55,7 +55,6 @@ public:
 
 void Machine::Run()
 {
-	DEBUG(dbgSys, "---RUNNING IN MIPSSIM");
 	Instruction *instr = new Instruction; // storage for decoded instruction
 
 	if (debug->IsEnabled('m'))
@@ -64,20 +63,13 @@ void Machine::Run()
 		cout << ", at time: " << kernel->stats->totalTicks << "\n";
 	}
 	kernel->interrupt->setStatus(UserMode);
-	DEBUG(dbgSys, "---SET STATUS IN MIPSSIM");
 	for (;;)
 	{
 		OneInstruction(instr);
 		kernel->interrupt->OneTick();
-		//DEBUG(dbgSys, "RUN UNTIL TIME" << runUntilTime);
-		//DEBUG(dbgSys, "KERNEL TICK TIME" << kernel->stats->totalTicks);
 		if (singleStep && (runUntilTime <= kernel->stats->totalTicks))
-		{
 			Debugger();
-		}
-		
 	}
-	DEBUG(dbgSys, "---FINISH RUNNING IN MIPSSIM");
 }
 
 //----------------------------------------------------------------------
@@ -135,7 +127,7 @@ void Machine::OneInstruction(Instruction *instr)
 	int raw;
 	int nextLoadReg = 0;
 	int nextLoadValue = 0; // record delayed load operation, to apply
-						   // in the future
+		// in the future
 
 	// Fetch instruction
 	if (!ReadMem(registers[PCReg], 4, &raw))

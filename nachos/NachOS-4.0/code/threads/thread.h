@@ -41,10 +41,8 @@
 #include "utility.h"
 #include "sysdep.h"
 
-#ifdef USER_PROGRAM
 #include "machine.h"
 #include "addrspace.h"
-#endif
 
 // CPU register state to be saved on context switch.  
 // The x86 needs to save only a few registers, 
@@ -58,7 +56,7 @@
 
 // Size of the thread's private execution stack.
 // WATCH OUT IF THIS ISN'T BIG ENOUGH!!!!!
-const int StackSize = (4 * 1024);	// in words
+const int StackSize = (8 * 1024);	// in words
 
 
 // Thread state
@@ -82,7 +80,7 @@ class Thread {
     // THEY MUST be in this position for SWITCH to work.
     int *stackTop;			 // the current stack pointer
     void *machineState[MachineStateSize];  // all registers except for stackTop
-
+    
   public:
     Thread(char* debugName);		// initialize a Thread 
     ~Thread(); 				// deallocate a Thread
@@ -92,7 +90,7 @@ class Thread {
 
     // basic thread operations
 
-    void Fork(VoidFunctionPtr func, void *arg); 
+    void Fork(VoidFunctionPtr func, void* arg);
     				// Make thread run (*func)(arg)
     void Yield();  		// Relinquish the CPU if any 
 				// other thread is runnable
@@ -104,36 +102,23 @@ class Thread {
     void CheckOverflow();   	// Check if thread stack has overflowed
     void setStatus(ThreadStatus st) { status = st; }
     char* getName() { return (name); }
+    int getId() { return (threadId); }
     void Print() { cout << name; }
     void SelfTest();		// test whether thread impl is working
 
-    // morris add
-    void setBurstTime(int t)	{burstTime = t;}
-    int getBurstTime()		{return burstTime;}
-    void setStartTime(int t)	{startTime = t;}
-    int getStartTime()		{return startTime;}
-    void setPriority(int t)	{execPriority = t;}
-    int getPriority()		{return execPriority;}
-    static void SchedulingTest();
   private:
     // some of the private data for this class is listed above
-
-    // morris add
-    int burstTime;	// predicted burst time
-    int startTime;	// the start time of the thread
-    int execPriority;	// the execute priority of the thread
-
+    
     int *stack; 	 	// Bottom of the stack 
 				// NULL if this is the main thread
 				// (If NULL, don't deallocate stack)
     ThreadStatus status;	// ready, running or blocked
     char* name;
 
-    void StackAllocate(VoidFunctionPtr func, void *arg);
+    void StackAllocate(VoidFunctionPtr func, void* arg);
     				// Allocate a stack for thread.
 				// Used internally by Fork()
 
-#ifdef USER_PROGRAM
 // A thread running a user program actually has *two* sets of CPU registers -- 
 // one for its state while executing user code, one for its state 
 // while executing kernel code.
@@ -145,7 +130,12 @@ class Thread {
     void RestoreUserState();		// restore user-level register state
 
     AddrSpace *space;			// User code this thread is running.
-#endif
+    int threadId;
+    int exitStatus;
+    void FreeSpace(){
+        if (space != 0)
+            delete space;
+    }
 };
 
 // external function, dummy routine whose sole job is to call Thread::Print

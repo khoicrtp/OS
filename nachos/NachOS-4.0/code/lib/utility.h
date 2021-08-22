@@ -32,7 +32,7 @@
 //
 // This is used by Thread::Fork as well as a couple of other places.
 
-typedef void (*VoidFunctionPtr)(void *arg); 
+typedef void (*VoidFunctionPtr)(void* arg); 
 typedef void (*VoidNoArgFunctionPtr)(); 
 
 #endif // UTILITY_H

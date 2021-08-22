@@ -1,21 +1,21 @@
 #include "syscall.h"
 
-void main()
-{
-    int pingPID, pongPID, i;
-    PrintString("----PING PONG----\n");
-    // for (i = 0; i < 10; i++)
-    // {
-    //     PrintChar('%');
-    // }
-    //Exec("ping");
+void main(){
+    PrintString("____PING PONG___");
+    //PrintChar('*');
+    //PrintChar('*');
+    //PrintChar('^');
     Exec("ping");
-    PrintString("--------TEST-------\n");
+    PrintString("STARTING PING___");
+    //PrintChar('&');
+    //PrintChar('&');
+    //PrintChar('&');
     Exec("pong");
-    
+    //PrintChar('~');
+    // PrintChar('~');
+    // PrintChar('~');
+    //PrintChar('~');
+    //PrintString("AB");
     //ReadChar();
-    //pingPID = Exec("./ping.c");
-    //pongPID = Exec("./ping.c");
-
-    //Halt();
+    PrintString("___FINISH___");
 }

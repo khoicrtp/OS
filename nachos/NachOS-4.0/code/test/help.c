@@ -3,13 +3,13 @@
  */
 
 #include "syscall.h"
-#include "../userprog/syscall.h"
 
 int main()
 {
   PrintString("!!!!!!!This is our NachOS 4.0 project!!!!!!!\n");
   PrintString("Our team members: Nguyen Cao Thien Long - ID: 19127203\n");
   PrintString("                  Doan Nhat Minh - ID: 19127469\n");
+  PrintChar('*');
   PrintString("And now , we will introduce some system call in Nachos 4.0 throught two example: \n");
   PrintString("1.Ascii example : This example is about to use some system call as PrintNum,PrintChar... \n");
   PrintString("                  to print all readable character in Ascii table\n");

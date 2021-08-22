@@ -174,30 +174,6 @@ Scheduler::CheckToBeDestroyed()
 void
 Scheduler::Print()
 {
-    //DEBUG(dbgSys, "Ready list contents:\n");
     cout << "Ready list contents:\n";
     readyList->Apply(ThreadPrint);
-}
-
-void
-Scheduler::Tail ()
-{
-    // If the old thread gave up the processor because it was finishing,
-    // we need to delete its carcass.  Note we cannot delete the thread
-    // before now (for example, in Thread::Finish()), because up to this
-    // point, we were still running on the old thread's stack!
-
-    DEBUG(dbgSys, "Now in thread \"%s\"\n"<< kernel->currentThread->getName());
-
-    if (threadToBeDestroyed != NULL) {
-        delete threadToBeDestroyed;
-        threadToBeDestroyed = NULL;
-    }
-
-#ifdef USER_PROGRAM
-    if (currentThread->space != NULL) {         // if there is an address space
-        currentThread->RestoreUserState();     // to restore, do it.
-        currentThread->space->RestoreState();
-    }
-#endif
 }

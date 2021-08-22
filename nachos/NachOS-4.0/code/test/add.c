@@ -12,9 +12,8 @@ int main()
   int result;
   char c;
   char str[100];
-  PrintString("ENTER A NUMBER:");
   result=ReadNum();
-  PrintNum(result);
+
   PrintNum(150125012);
   Halt();
   /* not reached */

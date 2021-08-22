@@ -1,21 +1,9 @@
-// pcb.h 
-//  Process Control Block
-//	Save all information to control the process
-// All rights reserved.
-/////////////////////////////////////////////////
-// 	DH KHTN - DHQG TPHCM			/
-// 	1512034 Nguyen Dang Binh		/
-// 	1512042 Nguyen Thanh Chung		/
-// 	1512123 Hoang Ngoc Duc			/
-/////////////////////////////////////////////////
-
 #ifndef PCB_H
 #define PCB_H
 
 #include "thread.h"
 #include "synch.h"
 
-// Process Control Block
 class PCB
 {
 private:

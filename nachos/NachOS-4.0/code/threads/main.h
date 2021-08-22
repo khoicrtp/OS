@@ -8,20 +8,14 @@
 #ifndef MAIN_H
 #define MAIN_H
 
-#define MAX_CHILD 8
-#define MAX_THREAD 8
-
 #include "copyright.h"
 #include "debug.h"
 #include "kernel.h"
-
+// #include "ptable.h"
 extern Kernel *kernel;
 extern Debug *debug;
-extern bool exitThreadArray[MAX_CHILD];
-extern unsigned thread_index;
-extern Thread *threadToBeDestroyed; 
-extern Thread *threadArray[MAX_CHILD];
-
-
+// Semaphore *addrLock;
+// Bitmap *gPhysPageBitMap;
+// PTable *pTab;
 #endif // MAIN_H
 

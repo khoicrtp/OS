@@ -1,13 +1,6 @@
 #include "ptable.h"
-#include "system.h"
+#include "main.h"
 #include "openfile.h"
-/////////////////////////////////////////////////
-// 	DH KHTN - DHQG TPHCM			/
-// 	1512034 Nguyen Dang Binh		/
-// 	1512042 Nguyen Thanh Chung		/
-// 	1512123 Hoang Ngoc Duc			/
-/////////////////////////////////////////////////
-
 
 #define For(i,a,b) for (int i = (a); i < b; ++i)
 
@@ -18,7 +11,7 @@ PTable::PTable(int size)
         return;
 
     psize = size;
-    bm = new BitMap(size);
+    bm = new Bitmap(size);
     bmsem = new Semaphore("bmsem",1);
 
     For(i,0,MAX_PROCESS){
@@ -48,7 +41,9 @@ PTable::~PTable()
 
 int PTable::ExecUpdate(char* name)
 {
-	//Gọi mutex->P(); để giúp tránh tình trạng nạp 2 tiến trình cùng 1 lúc.
+
+
+        //Gọi mutex->P(); để giúp tránh tình trạng nạp 2 tiến trình cùng 1 lúc.
 	bmsem->P();
 	
 	// Kiểm tra tính hợp lệ của chương trình “name”.
@@ -60,7 +55,7 @@ int PTable::ExecUpdate(char* name)
 		return -1;
 	}
 	// So sánh tên chương trình và tên của currentThread để chắc chắn rằng chương trình này không gọi thực thi chính nó.
-	if( strcmp(name,"./test/scheduler") == 0 || strcmp(name,currentThread->getName()) == 0 )
+	if( strcmp(name,"./test/scheduler") == 0 || strcmp(name,kernel->currentThread->getName()) == 0 )
 	{
 		printf("\nPTable::Exec : Can't not execute itself.\n");		
 		bmsem->V();
@@ -83,7 +78,7 @@ int PTable::ExecUpdate(char* name)
 	pcb[index]->SetFileName(name);
 
 	// parrentID là processID của currentThread
-    	pcb[index]->parentID = currentThread->processID;
+    	pcb[index]->parentID = kernel->currentThread->threadId;
 
 	
 	// Gọi thực thi phương thức Exec của lớp PCB.
@@ -105,7 +100,7 @@ int PTable::JoinUpdate(int id)
 		return -1;
 	}
 	// Check if process running is parent process of process which joins
-	if(currentThread->processID != pcb[id]->parentID)
+	if(kernel->currentThread->threadId != pcb[id]->parentID)
 	{
 		printf("\nPTable::JoinUpdate Can't join in process which is not it's parent process.\n");
 		return -1;
@@ -131,12 +126,12 @@ int PTable::JoinUpdate(int id)
 int PTable::ExitUpdate(int exitcode)
 {              
     // Nếu tiến trình gọi là main process thì gọi Halt().
-	int id = currentThread->processID;
+	int id = kernel->currentThread->threadId;
 	if(id == 0)
 	{
 		
-		currentThread->FreeSpace();		
-		interrupt->Halt();
+		kernel->currentThread->FreeSpace();		
+		kernel->interrupt->Halt();
 		return 0;
 	}
     
@@ -167,7 +162,7 @@ int PTable::ExitUpdate(int exitcode)
 // Find free slot in order to save the new process infom
 int PTable::GetFreeSlot()
 {
-	return bm->Find();
+	return bm->FindAndSet();
 }
 
 // Check if Process ID is Exist
@@ -189,4 +184,3 @@ char* PTable::GetFileName(int id)
 {
 	return (pcb[id]->GetFileName());
 }
-
