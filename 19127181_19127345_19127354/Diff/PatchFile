@@ -1,0 +1,534 @@
+Binary files Source/NachOS-4.0/code/test/add and nachos/NachOS-4.0/code/test/add differ
+diff -ruN Source/NachOS-4.0/code/test/ascii.c nachos/NachOS-4.0/code/test/ascii.c
+--- Source/NachOS-4.0/code/test/ascii.c	2021-08-22 17:27:16.000000000 +0700
++++ nachos/NachOS-4.0/code/test/ascii.c	1970-01-01 08:00:00.000000000 +0800
+@@ -1,14 +0,0 @@
+-/* ascii.c
+- *	Simple program to print readable character in ascii table by systemcall
+- */
+-
+-#include "syscall.h"
+-
+-int main()
+-{
+-  PrintChar('a');
+-  PrintChar('b');
+-
+-  Halt();
+-  /* not reached */
+-}
+\ No newline at end of file
+Binary files Source/NachOS-4.0/code/test/halt and nachos/NachOS-4.0/code/test/halt differ
+diff -ruN Source/NachOS-4.0/code/test/help.c nachos/NachOS-4.0/code/test/help.c
+--- Source/NachOS-4.0/code/test/help.c	2021-08-22 17:23:47.000000000 +0700
++++ nachos/NachOS-4.0/code/test/help.c	1970-01-01 08:00:00.000000000 +0800
+@@ -1,16 +0,0 @@
+-/* help.c
+- *	Simple program to introduce some basics about our team and briefly discription about the sort and acsii program.
+- */
+-
+-#include "syscall.h"
+-
+-int main()
+-{
+-  PrintString("|-----------NACHOS-4.0-----------|\n");
+-  PrintString("|Bach Minh Khoi - MSSV: 19127181 |\n");
+-  PrintString("|Lam Quoc Cuong - MSSV: 19127345 |\n");
+-  PrintString("|Le Thanh Dat   - MSSV: 19127354 |\n");
+-  PrintString("|--------------------------------|\n");
+-  Halt();
+-  /* not reached */
+-}
+\ No newline at end of file
+Binary files Source/NachOS-4.0/code/test/matmult and nachos/NachOS-4.0/code/test/matmult differ
+diff -ruN Source/NachOS-4.0/code/test/ping.c nachos/NachOS-4.0/code/test/ping.c
+--- Source/NachOS-4.0/code/test/ping.c	2021-08-22 16:37:36.000000000 +0700
++++ nachos/NachOS-4.0/code/test/ping.c	1970-01-01 08:00:00.000000000 +0800
+@@ -1,10 +0,0 @@
+-#include "syscall.h"
+-int main()
+-{
+-    int i;
+-    for (i = 0; i < 1000; i++)
+-    {
+-        PrintString("A");
+-    }
+-}
+-
+diff -ruN Source/NachOS-4.0/code/test/pong.c nachos/NachOS-4.0/code/test/pong.c
+--- Source/NachOS-4.0/code/test/pong.c	2021-08-22 16:39:13.000000000 +0700
++++ nachos/NachOS-4.0/code/test/pong.c	1970-01-01 08:00:00.000000000 +0800
+@@ -1,10 +0,0 @@
+-#include "syscall.h"
+-int main()
+-{
+-    int i;
+-    for (i = 0; i < 1000; i++)
+-    {
+-        PrintString("B");
+-    }
+-}
+-
+diff -ruN Source/NachOS-4.0/code/test/scheduler.c nachos/NachOS-4.0/code/test/scheduler.c
+--- Source/NachOS-4.0/code/test/scheduler.c	2021-08-22 17:01:11.000000000 +0700
++++ nachos/NachOS-4.0/code/test/scheduler.c	1970-01-01 08:00:00.000000000 +0800
+@@ -1,9 +0,0 @@
+-#include "syscall.h"
+-
+-void main(){
+-    PrintString("\n____PING PONG___\n");
+-    Exec("ping");
+-    Exec("pong");
+-    PrintString("\n___FINISH___\n");
+-}
+-
+Binary files Source/NachOS-4.0/code/test/segments and nachos/NachOS-4.0/code/test/segments differ
+Binary files Source/NachOS-4.0/code/test/shell and nachos/NachOS-4.0/code/test/shell differ
+Binary files Source/NachOS-4.0/code/test/sort and nachos/NachOS-4.0/code/test/sort differ
+diff -ruN Source/NachOS-4.0/code/userprog/pcb.cc nachos/NachOS-4.0/code/userprog/pcb.cc
+--- Source/NachOS-4.0/code/userprog/pcb.cc	2021-08-22 20:28:22.000000000 +0700
++++ nachos/NachOS-4.0/code/userprog/pcb.cc	1970-01-01 08:00:00.000000000 +0800
+@@ -1,103 +0,0 @@
+-#include "pcb.h"
+-#include "utility.h"
+-#include "thread.h"
+-#include "addrspace.h"
+-
+-extern void StartProcess(int arg);
+-PCB::PCB(int id)
+-{
+-	if (id == 0)
+-		this->parentID = -1;
+-	else
+-		this->parentID = kernel->currentThread->threadId;
+-
+-	this->numwait = this->exitcode = this->boolBG = 0;
+-	this->thread = NULL;
+-
+-	this->joinsem = new Semaphore("joinsem", 0);
+-	this->exitsem = new Semaphore("exitsem", 0);
+-	this->multex = new Semaphore("multex", 1);
+-}
+-PCB::~PCB()
+-{
+-	if (joinsem != NULL)
+-		delete this->joinsem;
+-	if (exitsem != NULL)
+-		delete this->exitsem;
+-	if (multex != NULL)
+-		delete this->multex;
+-	if (thread != NULL)
+-	{
+-		thread->FreeSpace();
+-		thread->Finish();
+-	}
+-}
+-int PCB::GetID() { return this->thread->threadId; }
+-int PCB::GetNumWait() { return this->numwait; }
+-int PCB::GetExitCode() { return this->exitcode; }
+-
+-void PCB::SetExitCode(int ec) { this->exitcode = ec; }
+-
+-// Process tranlation to block
+-// Wait for JoinRelease to continue exec
+-void PCB::JoinWait()
+-{
+-	joinsem->P();
+-}
+-
+-void PCB::JoinRelease()
+-{
+-	joinsem->V();
+-}
+-
+-void PCB::ExitWait()
+-{
+-	exitsem->P();
+-}
+-
+-// Release wating process
+-void PCB::ExitRelease()
+-{
+-	exitsem->V();
+-}
+-
+-void PCB::IncNumWait()
+-{
+-	multex->P();
+-	++numwait;
+-	multex->V();
+-}
+-
+-void PCB::DecNumWait()
+-{
+-	multex->P();
+-	if (numwait > 0)
+-		--numwait;
+-	multex->V();
+-}
+-
+-void PCB::SetFileName(char *fn) { strcpy(FileName, fn); }
+-char *PCB::GetFileName() { return this->FileName; }
+-
+-int PCB::Exec(char *filename, int id)
+-{
+-	multex->P();
+-
+-	this->thread = new Thread(filename);
+-
+-	if (this->thread == NULL)
+-	{
+-		printf("\nPCB::Exec:: Not enough memory..!\n");
+-		multex->V();
+-		return -1;
+-	}
+-
+-	this->thread->threadId = id;
+-
+-	this->parentID = kernel->currentThread->threadId;
+-
+-	this->thread->Fork((VoidFunctionPtr)&StartProcess, (void *)id);
+-
+-	multex->V();
+-	return id;
+-}
+\ No newline at end of file
+diff -ruN Source/NachOS-4.0/code/userprog/pcb.h nachos/NachOS-4.0/code/userprog/pcb.h
+--- Source/NachOS-4.0/code/userprog/pcb.h	2021-08-22 20:29:22.000000000 +0700
++++ nachos/NachOS-4.0/code/userprog/pcb.h	1970-01-01 08:00:00.000000000 +0800
+@@ -1,51 +0,0 @@
+-#ifndef PCB_H
+-#define PCB_H
+-
+-#include "thread.h"
+-#include "synch.h"
+-
+-class PCB
+-{
+-private:
+-    Semaphore* joinsem;         // semaphore cho quá trình join
+-    Semaphore* exitsem;         // semaphore cho quá trình exit
+-    Semaphore* multex;          // semaphore cho quá trình truy xuất đọc quyền  
+-
+-    int exitcode;		
+-    int numwait;                // số tiến trình đã join
+-
+-    char FileName[32];          // Ten cua tien trinh
+-
+-    Thread* thread;             // Tien trinh cua chuong trinh
+-public:
+-    int parentID;               // ID cua tien trinh cha
+-    
+-    char boolBG;                // Kiem tra neu la tien trinh nen
+-    
+-    PCB(int = 0);               // Contructor
+-    ~PCB();                     // Destructor
+-
+-    int Exec(char*,int);        // Tao mot thread moi
+-    int GetID();                // Trả về ProcessID của tiến trình gọi thực hiện
+-    int GetNumWait();           // Trả về số lượng tiến trình chờ
+-
+-
+-    void JoinWait();            // 1. Tiến trình cha đợi tiến trình con kết thúc
+-                        
+-    void ExitWait();             // 4. Tiến trình con kết thúc
+-
+-    void JoinRelease();         // 2. Báo cho tiến trình cha thực thi tiếp
+-    void ExitRelease();         // 3. Cho phép tiến trình con kết thúc
+-
+-    void IncNumWait();          // Tăng số tiến trình chờ
+-    void DecNumWait();          // Giảm số tiến trình chờ
+-
+-    void SetExitCode(int);      // Đặt exitcode của tiến trình
+-    int GetExitCode();          // Trả về exitcode
+-
+-    void SetFileName(char*);    // Set ten tien trinh
+-    char* GetFileName();        // Tra ve ten tien trinh
+-
+-};
+-
+-#endif // PCB_H
+\ No newline at end of file
+diff -ruN Source/NachOS-4.0/code/userprog/ptable.cc nachos/NachOS-4.0/code/userprog/ptable.cc
+--- Source/NachOS-4.0/code/userprog/ptable.cc	2021-08-22 16:15:57.000000000 +0700
++++ nachos/NachOS-4.0/code/userprog/ptable.cc	1970-01-01 08:00:00.000000000 +0800
+@@ -1,186 +0,0 @@
+-#include "ptable.h"
+-#include "main.h"
+-#include "openfile.h"
+-
+-#define For(i,a,b) for (int i = (a); i < b; ++i)
+-
+-PTable::PTable(int size)
+-{
+-
+-    if (size < 0)
+-        return;
+-
+-    psize = size;
+-    bm = new Bitmap(size);
+-    bmsem = new Semaphore("bmsem",1);
+-
+-    For(i,0,MAX_PROCESS){
+-		pcb[i] = 0;
+-    }
+-
+-	bm->Mark(0);
+-
+-	pcb[0] = new PCB(0);
+-	pcb[0]->SetFileName("./test/scheduler");
+-	pcb[0]->parentID = -1;
+-}
+-
+-PTable::~PTable()
+-{
+-    if( bm != 0 )
+-	delete bm;
+-    
+-    For(i,0,psize){
+-		if(pcb[i] != 0)
+-			delete pcb[i];
+-    }
+-		
+-	if( bmsem != 0)
+-		delete bmsem;
+-}
+-
+-int PTable::ExecUpdate(char* name)
+-{
+-
+-
+-        //Gọi mutex->P(); để giúp tránh tình trạng nạp 2 tiến trình cùng 1 lúc.
+-	bmsem->P();
+-	
+-	// Kiểm tra tính hợp lệ của chương trình “name”.
+-        // Kiểm tra sự tồn tại của chương trình “name” bằng cách gọi phương thức Open của lớp fileSystem.
+-	if(name == NULL)
+-	{
+-		printf("\nPTable::Exec : Can't not execute name is NULL.\n");
+-		bmsem->V();
+-		return -1;
+-	}
+-	// So sánh tên chương trình và tên của currentThread để chắc chắn rằng chương trình này không gọi thực thi chính nó.
+-	if( strcmp(name,"./test/scheduler") == 0 || strcmp(name,kernel->currentThread->getName()) == 0 )
+-	{
+-		printf("\nPTable::Exec : Can't not execute itself.\n");		
+-		bmsem->V();
+-		return -1;
+-	}
+-
+-	// Tìm slot trống trong bảng Ptable.
+-	int index = this->GetFreeSlot();
+-
+-    // Check if have free slot
+-	if(index < 0)
+-	{
+-		printf("\nPTable::Exec :There is no free slot.\n");
+-		bmsem->V();
+-		return -1;
+-	}
+-
+-	//Nếu có slot trống thì khởi tạo một PCB mới với processID chính là index của slot này
+-	pcb[index] = new PCB(index);
+-	pcb[index]->SetFileName(name);
+-
+-	// parrentID là processID của currentThread
+-    	pcb[index]->parentID = kernel->currentThread->threadId;
+-
+-	
+-	// Gọi thực thi phương thức Exec của lớp PCB.
+-	int pid = pcb[index]->Exec(name,index);
+-
+-	// Gọi bmsem->V()
+-	bmsem->V();
+-	// Trả về kết quả thực thi của PCB->Exec.
+-	return pid;
+-}
+-
+-int PTable::JoinUpdate(int id)
+-{
+-	// Ta kiểm tra tính hợp lệ của processID id và kiểm tra tiến trình gọi Join có phải là cha của tiến trình
+-	// có processID là id hay không. Nếu không thỏa, ta báo lỗi hợp lý và trả về -1.
+-	if(id < 0)
+-	{
+-		printf("\nPTable::JoinUpdate : id = %d", id);
+-		return -1;
+-	}
+-	// Check if process running is parent process of process which joins
+-	if(kernel->currentThread->threadId != pcb[id]->parentID)
+-	{
+-		printf("\nPTable::JoinUpdate Can't join in process which is not it's parent process.\n");
+-		return -1;
+-	}
+-
+-    	// Tăng numwait và gọi JoinWait() để chờ tiến trình con thực hiện.
+-	// Sau khi tiến trình con thực hiện xong, tiến trình đã được giải phóng
+-	pcb[pcb[id]->parentID]->IncNumWait();
+-	
+-
+-	//pcb[id]->boolBG = 1;
+-	
+-	pcb[id]->JoinWait();
+-
+-	// Xử lý exitcode.	
+-	int ec = pcb[id]->GetExitCode();
+-        // ExitRelease() để cho phép tiến trình con thoát.
+-	pcb[id]->ExitRelease();
+-
+-    // Successfully
+-	return ec;
+-}
+-int PTable::ExitUpdate(int exitcode)
+-{              
+-    // Nếu tiến trình gọi là main process thì gọi Halt().
+-	int id = kernel->currentThread->threadId;
+-	if(id == 0)
+-	{
+-		
+-		kernel->currentThread->FreeSpace();		
+-		kernel->interrupt->Halt();
+-		return 0;
+-	}
+-    
+-        if(IsExist(id) == false)
+-	{
+-		printf("\nPTable::ExitUpdate: This %d is not exist. Try again?", id);
+-		return -1;
+-	}
+-
+-	
+-
+-
+-	
+-	// Ngược lại gọi SetExitCode để đặt exitcode cho tiến trình gọi.
+-	pcb[id]->SetExitCode(exitcode);
+-	pcb[pcb[id]->parentID]->DecNumWait();
+-    
+-    // Gọi JoinRelease để giải phóng tiến trình cha đang đợi nó(nếu có) và ExitWait() để xin tiến trình cha
+-    // cho phép thoát.
+-	pcb[id]->JoinRelease();
+-    // 
+-	pcb[id]->ExitWait();
+-	
+-	Remove(id);
+-	return exitcode;
+-}
+-
+-// Find free slot in order to save the new process infom
+-int PTable::GetFreeSlot()
+-{
+-	return bm->FindAndSet();
+-}
+-
+-// Check if Process ID is Exist
+-bool PTable::IsExist(int pid)
+-{
+-	return bm->Test(pid);
+-}
+-
+-// Remove proccess ID out of table
+-// When it ends
+-void PTable::Remove(int pid)
+-{
+-	bm->Clear(pid);
+-	if(pcb[pid] != 0)
+-		delete pcb[pid];
+-}
+-
+-char* PTable::GetFileName(int id)
+-{
+-	return (pcb[id]->GetFileName());
+-}
+\ No newline at end of file
+diff -ruN Source/NachOS-4.0/code/userprog/ptable.h nachos/NachOS-4.0/code/userprog/ptable.h
+--- Source/NachOS-4.0/code/userprog/ptable.h	2021-08-22 16:15:57.000000000 +0700
++++ nachos/NachOS-4.0/code/userprog/ptable.h	1970-01-01 08:00:00.000000000 +0800
+@@ -1,36 +0,0 @@
+-#ifndef PTABLE_H
+-#define PTABLE_H
+-
+-#include "bitmap.h"
+-#include "pcb.h"
+-#include "synch.h"
+-
+-#define MAX_PROCESS 10
+-
+-class PTable
+-{
+-private:
+-	int psize;
+-	Bitmap *bm;                 // đánh dấu các vị trí đã được sử dụng trong pcb
+-	PCB* pcb[MAX_PROCESS];
+-
+-	Semaphore* bmsem;           // dùng để ngăn chặn trường hợp nạp 2 tiến trình cùng
+-
+-public:
+-     PTable(int size);           // Khoi tao size doi tuong pcb
+-                                // de luu size process.
+-                                // Gan gia tri ban dau la null.
+-    ~PTable();                  // Huy cac doi tuong da tao
+-		
+-    int ExecUpdate(char*);      // Xử lý cho system call SC_Exit
+-    int ExitUpdate(int);        // Xử lý cho system call SC_Exit
+-    int JoinUpdate(int);        // Xử lý cho system call SC_Join
+-
+-    int GetFreeSlot();          // tìm free slot để lưu thông tin cho tiến trình mới
+-    bool IsExist(int pid);      // kiểm tra tồn tại processID này không?
+-    
+-    void Remove(int pid);       // khi tiến trình kết thúc, delete processID ra khỏi mảng quản lý nó
+-
+-    char* GetFileName(int id);  // Trả về tên của tiến trình
+-};
+-#endif // PTABLE_H
+diff -ruN Source/NachOS-4.0/code/.vscode/c_cpp_properties.json nachos/NachOS-4.0/code/.vscode/c_cpp_properties.json
+--- Source/NachOS-4.0/code/.vscode/c_cpp_properties.json	2021-08-22 20:02:29.000000000 +0700
++++ nachos/NachOS-4.0/code/.vscode/c_cpp_properties.json	1970-01-01 08:00:00.000000000 +0800
+@@ -1,20 +0,0 @@
+-{
+-  "configurations": [
+-    {
+-      "name": "linux-gcc-x64",
+-      "includePath": [
+-        "${workspaceFolder}/**"
+-      ],
+-      "compilerPath": "/usr/bin/gcc",
+-      "cStandard": "${default}",
+-      "cppStandard": "${default}",
+-      "intelliSenseMode": "linux-gcc-x64",
+-      "compilerArgs": [
+-        "-Wall",
+-        "-Wextra",
+-        "-Wpedantic"
+-      ]
+-    }
+-  ],
+-  "version": 4
+-}
+\ No newline at end of file
+diff -ruN Source/NachOS-4.0/code/.vscode/settings.json nachos/NachOS-4.0/code/.vscode/settings.json
+--- Source/NachOS-4.0/code/.vscode/settings.json	2021-08-22 20:02:29.000000000 +0700
++++ nachos/NachOS-4.0/code/.vscode/settings.json	1970-01-01 08:00:00.000000000 +0800
+@@ -1,22 +0,0 @@
+-{
+-  "files.associations": {
+-    "syscall.h": "c"
+-  },
+-  "C_Cpp_Runner.cCompilerPath": "/usr/bin/gcc",
+-  "C_Cpp_Runner.cppCompilerPath": "/usr/bin/g++",
+-  "C_Cpp_Runner.debuggerPath": "/usr/bin/gdb",
+-  "C_Cpp_Runner.makePath": "/usr/bin/make",
+-  "C_Cpp_Runner.warnings": [
+-    "-Wall",
+-    "-Wextra",
+-    "-Wpedantic"
+-  ],
+-  "C_Cpp_Runner.compilerArgs": [],
+-  "C_Cpp_Runner.includePaths": [],
+-  "C_Cpp_Runner.linkerArgs": [],
+-  "C_Cpp_Runner.cStandard": "",
+-  "C_Cpp_Runner.cppStandard": "",
+-  "C_Cpp_Runner.excludeSearch": [],
+-  "C_Cpp_Runner.enableWarnings": true,
+-  "C_Cpp_Runner.warningsAsError": false
+-}
+\ No newline at end of file
